@@ -18,7 +18,7 @@
     "url": "https://github.com/gopalrohra/appshome-react/issues"
   },
   "homepage": "https://github.com/gopalrohra/appshome-react#readme",
-  "dependencies": {
+  "peerDependencies": {
     "react": "^16.9.0",
     "react-bootstrap": "^1.0.0-beta.10"
   },

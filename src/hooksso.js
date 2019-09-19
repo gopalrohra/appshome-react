@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import React from 'react';
 import config from './config';
 export const useSSO = () => {
     const [isAuthenticated, setIsAuthenticated] = React.useState(false);

@@ -1,9 +1,9 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import config from './config';
 export const useSSO = () => {
-    const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-    const [isAuthenticating, setIsAuthenticating] = React.useState(true);
-    React.useEffect(() => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAuthenticating, setIsAuthenticating] = useState(true);
+    useEffect(() => {
         const script = document.createElement("script");
         script.src = config.SESSION_JS_URL;
         script.async=true;

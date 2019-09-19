@@ -6,7 +6,7 @@
   "files": ["dist/*"],
   "scripts": {
     "build": "webpack --mode development",
-    "prepare": "webpack --mode production"
+    "prepare": "NODE_ENV=production babel ./src --out-dir ./dist -s inline"
   },
   "repository": {
     "type": "git",

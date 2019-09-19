@@ -5,7 +5,7 @@ export const useSSO = () => {
     const [isAuthenticating, setIsAuthenticating] = useState(true);
     useEffect(() => {
         const script = document.createElement("script");
-        script.src = config.SESSION_JS_URL;
+        script.src = process.env.REACT_APP_SESSION_JS_URL;
         script.async=true;
         script.onload = function() {
             console.log("Script loaded");

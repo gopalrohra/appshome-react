@@ -20,7 +20,8 @@
   "homepage": "https://github.com/gopalrohra/appshome-react#readme",
   "peerDependencies": {
     "react": "^16.9.0",
-    "react-bootstrap": "^1.0.0-beta.10"
+    "react-bootstrap": "^1.0.0-beta.10",
+    "hookrouter": "^1.2.3"
   },
   "devDependencies": {
     "react": "^16.9.0",

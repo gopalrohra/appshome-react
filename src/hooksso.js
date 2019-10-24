@@ -1,10 +1,10 @@
 import React, {useState, useEffect} from 'react';
-export const useSSO = () => {
+export const useSSO = (sso_script) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(true);
     useEffect(() => {
         const script = document.createElement("script");
-        script.src = process.env.REACT_APP_SESSION_JS_URL;
+        script.src = sso_script;
         script.async=true;
         script.onload = function() {
             console.log("Script loaded");

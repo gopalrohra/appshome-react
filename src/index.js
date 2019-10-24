@@ -1,3 +1,3 @@
 import {useSSO} from './hooksso';
-import {MySpinner, Header} from './components';
-export {useSSO, MySpinner, Header};
+import {MySpinner, Header, NotFound} from './components';
+export {useSSO, MySpinner, Header, NotFound};

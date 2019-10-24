@@ -1,5 +1,5 @@
 import React from 'react';
-import {  Nav, Navbar, Spinner } from 'react-bootstrap';
+import { Nav, Navbar, Spinner, Container } from 'react-bootstrap';
 import { A, } from 'hookrouter';
 
 export function MySpinner() {
@@ -28,19 +28,28 @@ export function Header(props) {
                 </Nav>
             </Navbar.Collapse>
         </Navbar>
-    )
+    );
 }
 
 function AuthOptions(props) {
     const host = window.location.protocol + "//" + window.location.host;
-    if(props.isAuthenticated) {
-    return (
-        <Nav.Item><a href={config.AUTH_LOGOUT_URL + "?redirect_url=" + host} className="nav-link">Logout</a></Nav.Item>
-    );
-    }else {
+    if (props.isAuthenticated) {
         return (
-            [<Nav.Item><a href={config.AUTH_LOGIN_URL + "?redirect_url=" + host + "/apps"} className="nav-link">Login</a></Nav.Item>,
-            <Nav.Item><a href={config.AUTH_REGISTER_URL} className="nav-link">Register</a></Nav.Item>]
+            <Nav.Item><a href={process.env.REACT_APP_AUTH_LOGOUT_URL + "?redirect_url=" + host} className="nav-link">Logout</a></Nav.Item>
+        );
+    } else {
+        return (
+            [<Nav.Item><a href={process.env.REACT_APP_AUTH_LOGIN_URL + "?redirect_url=" + host + "/apps"} className="nav-link">Login</a></Nav.Item>,
+            <Nav.Item><a href={process.env.REACT_APP_AUTH_REGISTER_URL} className="nav-link">Register</a></Nav.Item>]
         )
     }
+}
+export function NotFound() {
+    return (
+        <Container className="vh-100">
+            <div className="jumbotron d-flex align-items-center justify-content-center h-100">
+                <h2>PageOops, looks like that is not available.</h2>
+            </div>
+        </Container>
+    );
 }

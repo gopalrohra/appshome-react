@@ -2,6 +2,7 @@ import React, {useState, useEffect} from 'react';
 export const useSSO = (sso_script) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(true);
+    const authCode = null;
     useEffect(() => {
         const script = document.createElement("script");
         script.src = sso_script;
@@ -12,6 +13,8 @@ export const useSSO = (sso_script) => {
                 (msg) => {
                     setIsAuthenticated(true)
                     setIsAuthenticating(false);
+                    authCode = msg.code;
+                    console.log("Assigned code to authCode: " + authCode);
                 },
                 (msg) => {
                     setIsAuthenticated(false)
@@ -29,5 +32,5 @@ export const useSSO = (sso_script) => {
             window.authSession.removeLoginListeners();
         };
         }, [])   ;
-        return [isAuthenticated, isAuthenticating];
+        return [isAuthenticated, isAuthenticating, authCode];
 };

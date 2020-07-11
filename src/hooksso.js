@@ -1,8 +1,6 @@
 import React, {useState, useEffect} from 'react';
 export const useSSO = (sso_script) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isAuthenticating, setIsAuthenticating] = useState(true);
-    const authCode = null;
+    const [authStatus, setAuthStatus] =useState ({isAuthenticated: false, isAuthenticating: false, authCode: null});
     useEffect(() => {
         const script = document.createElement("script");
         script.src = sso_script;
@@ -11,14 +9,21 @@ export const useSSO = (sso_script) => {
             console.log("Script loaded");
             window.authSession.addLoginListeners(
                 (msg) => {
-                    setIsAuthenticated(true)
-                    setIsAuthenticating(false);
-                    authCode = msg.code;
-                    console.log("Assigned code to authCode: " + authCode);
+                    const _authStatus ={
+                        authCode: msg.code,
+                        isAuthenticated: true,
+                        isAuthenticating:false,
+                };
+                setAuthStatus(_authStatus);
+                    console.log("Assigned status to authStatus: " + JSON.stringify(_authStatus));
                 },
                 (msg) => {
-                    setIsAuthenticated(false)
-                    setIsAuthenticating(false);
+                    const _authStatus = {
+                        isAuthenticated: false,
+                        isAuthenticating: false,
+                        authCode: null,
+                    };
+                    setAuthStatus(_authStatus);
                 }
             );
             console.log("Attached login listeners, going to check authentication status");
@@ -31,6 +36,6 @@ export const useSSO = (sso_script) => {
         return () => {
             window.authSession.removeLoginListeners();
         };
-        }, [])   ;
-        return [isAuthenticated, isAuthenticating, authCode];
+        }, []);
+        return authStatus;
 };

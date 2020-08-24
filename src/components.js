@@ -14,6 +14,10 @@ export function MySpinner() {
     );
 }
 export function Header(props) {
+    let AuthOptions = CommonAuthOptions;
+    if (props.customAuthOptions) {
+        AuthOptions = props.customAuthOptions;
+    }
     return (
         <Navbar expand="lg" bg="dark" variant="dark" collapseOnSelect="true" >
             <Navbar.Brand>
@@ -31,7 +35,7 @@ export function Header(props) {
     );
 }
 
-function AuthOptions(props) {
+function CommonAuthOptions(props) {
     const host = window.location.protocol + "//" + window.location.host;
     if (props.isAuthenticated) {
         return (
@@ -39,7 +43,7 @@ function AuthOptions(props) {
         );
     } else {
         return (
-            [<Nav.Item><a href={process.env.REACT_APP_AUTH_LOGIN_URL + "?redirect_url=" + host + "/apps"} className="nav-link">Login</a></Nav.Item>,
+            [<Nav.Item><a href={process.env.REACT_APP_AUTH_LOGIN_URL + "?redirect_url=" + host} className="nav-link">Login</a></Nav.Item>,
             <Nav.Item><a href={process.env.REACT_APP_AUTH_REGISTER_URL} className="nav-link">Register</a></Nav.Item>]
         )
     }

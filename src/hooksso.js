@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 export const useSSO = (sso_script) => {
-    const [authStatus, setAuthStatus] =useState ({isAuthenticated: false, isAuthenticating: false, authCode: null});
+    const [authStatus, setAuthStatus] =useState ({isAuthenticated: false, isAuthenticating: true, authCode: null});
     useEffect(() => {
         const script = document.createElement("script");
         script.src = sso_script;

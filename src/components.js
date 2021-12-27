@@ -52,7 +52,7 @@ export function NotFound() {
     return (
         <Container className="vh-100">
             <div className="jumbotron d-flex align-items-center justify-content-center h-100">
-                <h2>PageOops, looks like that is not available.</h2>
+                <h2>Oops, looks like that page is not available.</h2>
             </div>
         </Container>
     );

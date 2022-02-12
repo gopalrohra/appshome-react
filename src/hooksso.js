@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-export const useSSO = (sso_script) => {
+export const useSSO = (sso_script, client_id) => {
     const [authStatus, setAuthStatus] =useState ({isAuthenticated: false, isAuthenticating: true, authCode: null});
     useEffect(() => {
         const script = document.createElement("script");
@@ -28,7 +28,7 @@ export const useSSO = (sso_script) => {
             );
             console.log("Attached login listeners, going to check authentication status");
             window.authSession.onReady(() => {
-                window.authSession.isAuthenticated();
+                window.authSession.isAuthenticated(client_id);
             });
             console.log("Requested the authentication status");
         };

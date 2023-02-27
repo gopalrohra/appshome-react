@@ -5,10 +5,16 @@ export const useAuth = (params) => {
     return auth;
 };
 function startAuthentication(params, setAuth) {
+    var cleanUp = function(){}
+    if (!document.getElementById("appshome-auth-script")) {
+        return cleanUp;
+    }
     const script = document.createElement("script");
     script.src = params.ssoScriptUrl;
     script.async = true;
+    script.id = "appshome-auth-script";
     script.onload = function () {
+        cleanUp = () => window.authSession.removeLoginListeners();
         console.log("Script loaded");
         window.authSession.addLoginListeners((msg) => authSuccess(msg, setAuth, params), (msg) => authFailure(msg, setAuth));
         console.log("Attached login listeners, going to check authentication status");
@@ -16,7 +22,7 @@ function startAuthentication(params, setAuth) {
         console.log("Requested the authentication status for clientId: " + params.clientId);
     };
     document.body.appendChild(script);
-    return () => window.authSession.removeLoginListeners();
+    return cleanUp;
 }
 function authSuccess(msg, setAuth, params) {
     params.authCallback(msg.code)

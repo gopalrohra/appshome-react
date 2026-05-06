@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 export const useAuth = (params) => {
     const [auth, setAuth] = useState({ isAuthenticating: true, user: null });
+    console.log("Inside authHook");
     useEffect(() => startAuthentication(params, setAuth), []);
     return auth;
 };
 function startAuthentication(params, setAuth) {
     var cleanUp = function(){}
+    console.log("Inside start authentication")
     if (!document.getElementById("appshome-auth-script")) {
-        return cleanUp;
-    }
     const script = document.createElement("script");
     script.src = params.ssoScriptUrl;
+    console.log("SSO script: " + params.ssoScriptUrl);
     script.async = true;
     script.id = "appshome-auth-script";
     script.onload = function () {
@@ -22,6 +23,7 @@ function startAuthentication(params, setAuth) {
         console.log("Requested the authentication status for clientId: " + params.clientId);
     };
     document.body.appendChild(script);
+}
     return cleanUp;
 }
 function authSuccess(msg, setAuth, params) {

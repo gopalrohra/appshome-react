@@ -11,6 +11,8 @@ export const AuthContext = createContext({
     logout: () => {},
     changePassword: () => {},
     setJwt: () => {},
+    refreshAccessToken: async () => '',
+    fetchWithAuth: async () => undefined,
 });
 
 const defaultConfig = {
@@ -97,6 +99,10 @@ export function requireAuth(auth, element, fallback) {
 }
 
 export function authFetch(auth, url, options = {}) {
+    if (auth && typeof auth.fetchWithAuth === 'function') {
+        return auth.fetchWithAuth(url, options);
+    }
+
     const token = auth && (auth.jwt || auth.accessToken || auth.access_token);
     const headers = Object.assign({}, options.headers || {}, token ? { Authorization: `Bearer ${token}` } : {});
     return fetch(url, Object.assign({}, options, { headers }));
@@ -111,6 +117,7 @@ export function useRedirectAuth(rawConfig, navigate) {
     const config = useMemo(() => normalizeConfig(rawConfig), [rawConfig]);
     const [jwt, setJwtState] = useState(() => readStoredJwt(config));
     const [isAuthenticating, setIsAuthenticating] = useState(true);
+    const refreshPromiseRef = useRef(null);
     const user = useMemo(() => getUserFromJwt(jwt), [jwt]);
     const isAuthenticated = Boolean(jwt);
 
@@ -126,7 +133,7 @@ export function useRedirectAuth(rawConfig, navigate) {
 
     const logout = useCallback(() => {
         clearStoredJwt(config);
-        //setJwtState('');
+        setJwtState('');
         if (config.logoutUrl) {
             window.location.href = withParams(config.logoutUrl, { redirect_url: getAppUrl('/') });
         }
@@ -139,6 +146,44 @@ export function useRedirectAuth(rawConfig, navigate) {
     }, [config]);
 
     const exchangeAuthCode = useCallback((authCode) => exchangeCode(config, authCode), [config]);
+
+    const refreshAccessToken = useCallback(async () => {
+        if (!config.refreshTokenUrl || !jwt) {
+            throw new Error('Unable to refresh JWT');
+        }
+        if (refreshPromiseRef.current) {
+            return refreshPromiseRef.current;
+        }
+
+        refreshPromiseRef.current = refreshJwt(config, jwt)
+            .then((nextJwt) => {
+                if (!nextJwt) {
+                    throw new Error('Unable to refresh JWT');
+                }
+                setJwt(nextJwt);
+                return nextJwt;
+            })
+            .catch((err) => {
+                setJwt('');
+                throw err;
+            })
+            .finally(() => {
+                refreshPromiseRef.current = null;
+            });
+
+        return refreshPromiseRef.current;
+    }, [config, jwt, setJwt]);
+
+    const fetchWithAuth = useCallback(async (url, options = {}) => {
+        const { skipAuthRefresh, ...requestOptions } = options;
+        const response = await authorizedFetch(url, requestOptions, jwt);
+        if (response.status !== 401 || skipAuthRefresh || !config.refreshTokenUrl || !jwt) {
+            return response;
+        }
+
+        const nextJwt = await refreshAccessToken();
+        return authorizedFetch(url, requestOptions, nextJwt);
+    }, [config.refreshTokenUrl, jwt, refreshAccessToken]);
 
     useEffect(() => {
         if (!config.sessionStatusUrl) {
@@ -191,14 +236,18 @@ export function useRedirectAuth(rawConfig, navigate) {
         changePassword,
         setJwt,
         exchangeAuthCode,
+        refreshAccessToken,
+        fetchWithAuth,
         config,
         navigate,
-    }), [jwt, user, isAuthenticated, isAuthenticating, login, logout, changePassword, setJwt, exchangeAuthCode, config, navigate]);
+    }), [jwt, user, isAuthenticated, isAuthenticating, login, logout, changePassword, setJwt, exchangeAuthCode, refreshAccessToken, fetchWithAuth, config, navigate]);
 }
 
 export function startAuthorizeRedirect(config, redirectUrl) {
     const normalizedConfig = normalizeConfig(config);
-    const state = window.btoa(JSON.stringify({ redirectUrl: redirectUrl || normalizedConfig.defaultRedirectPath }));
+    const normalizedRedirectUrl = redirectUrl || normalizedConfig.defaultRedirectPath;
+    writePendingRedirect(normalizedConfig, normalizedRedirectUrl);
+    const state = window.btoa(JSON.stringify({ redirectUrl: normalizedRedirectUrl }));
     window.location.href = withParams(normalizedConfig.authorizeUrl, {
         client_id: normalizedConfig.clientId,
         redirect_uri: getAppUrl(normalizedConfig.callbackPath),
@@ -206,14 +255,22 @@ export function startAuthorizeRedirect(config, redirectUrl) {
     });
 }
 
-export function decodeAuthState(state, defaultRedirectPath = '/') {
+export function decodeAuthState(state, defaultRedirectPath = '/', config = {}) {
+    const fallbackRedirectPath = readPendingRedirect(config) || defaultRedirectPath;
     if (!state) {
-        return { redirectUrl: defaultRedirectPath };
+        clearPendingRedirect(config);
+        return { redirectUrl: fallbackRedirectPath };
     }
     try {
-        return JSON.parse(window.atob(state));
+        const decodedState = JSON.parse(window.atob(state));
+        clearPendingRedirect(config);
+        if (decodedState && decodedState.redirectUrl) {
+            return decodedState;
+        }
+        return { redirectUrl: fallbackRedirectPath };
     } catch (err) {
-        return { redirectUrl: defaultRedirectPath };
+        clearPendingRedirect(config);
+        return { redirectUrl: fallbackRedirectPath };
     }
 }
 
@@ -272,6 +329,24 @@ async function exchangeCode(config, authCode) {
     return data.jwt || data.token || data.access_token;
 }
 
+async function refreshJwt(config, jwt) {
+    const response = await fetch(config.refreshTokenUrl, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${jwt}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error('Unable to refresh JWT');
+    }
+
+    const data = await response.json();
+    return data.jwt || data.token || data.access_token;
+}
+
 async function getSessionStatus(config) {
     try {
         const response = await fetch(config.sessionStatusUrl, {
@@ -292,20 +367,19 @@ async function getSessionStatus(config) {
 }
 
 function currentPath() {
-    return `${window.location.pathname}${window.location.search}`;
+    return `${window.location.pathname}${window.location.search}${window.location.hash}` || '/';
 }
 
 function redirectTo(path, replace, navigate) {
-    if (navigate) {
-        navigate(path, replace);
+    if (navigate && path.startsWith('/')) {
+        navigate(path);
         return;
     }
     if (replace) {
-        window.history.replaceState(null, '', path);
+        window.location.replace(path);
     } else {
-        window.history.pushState(null, '', path);
+        window.location.href = path;
     }
-    window.dispatchEvent(new Event('popstate'));
 }
 
 function readStoredJwt(config) {
@@ -348,9 +422,52 @@ function storageKey(config) {
     return config.storageKey || `appshome.auth.${config.clientId}`;
 }
 
+function pendingRedirectStorageKey(config = {}) {
+    const normalizedConfig = normalizeConfig(config);
+    return normalizedConfig.redirectStorageKey || `${storageKey(normalizedConfig)}.redirect`;
+}
+
+function writePendingRedirect(config, redirectUrl) {
+    try {
+        window.sessionStorage.setItem(pendingRedirectStorageKey(config), redirectUrl);
+    } catch (err) {
+        return;
+    }
+}
+
+function readPendingRedirect(config) {
+    try {
+        return window.sessionStorage.getItem(pendingRedirectStorageKey(config));
+    } catch (err) {
+        return '';
+    }
+}
+
+function clearPendingRedirect(config) {
+    try {
+        window.sessionStorage.removeItem(pendingRedirectStorageKey(config));
+    } catch (err) {
+        return;
+    }
+}
+
 function toBase64(base64Url) {
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     return base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+}
+
+async function authorizedFetch(url, options, jwt) {
+    const headers = {
+        ...(options.headers || {}),
+    };
+    if (jwt) {
+        headers.Authorization = `Bearer ${jwt}`;
+    }
+
+    return fetch(url, {
+        ...options,
+        headers,
+    });
 }
 
 function DefaultSpinner({ label = 'Loading' }) {

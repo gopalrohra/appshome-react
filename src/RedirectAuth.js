@@ -47,7 +47,7 @@ export function AuthCallback({ navigate, spinner, renderError }) {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         const state = params.get('state');
-        const { redirectUrl } = decodeAuthState(state, auth.config.defaultRedirectPath);
+        const { redirectUrl } = decodeAuthState(state, auth.config.defaultRedirectPath, auth.config);
 
         if (!code) {
             setError('The authorization server did not send an auth code.');
